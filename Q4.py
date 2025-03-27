@@ -241,37 +241,15 @@ dqn_models, returns, lengths, losses = train_dqn_atari(
 
 # Save model checkpoints
 os.makedirs('checkpoint_ALE', exist_ok=True)
-checkpoint = {key: model.custom_dump() for key, model in dqn_models.items()}
-torch.save(checkpoint, f'checkpoint_ALE/Pong-v5.pt')
+# checkpoint = {key: model.custom_dump() for key, model in dqn_models.items()}
+# torch.save(checkpoint, f'checkpoint_ALE/Pong-v5.pt')
+# Combine everything into one dictionary
+checkpoint = {
+    "models": {key: model.custom_dump() for key, model in dqn_models.items()},
+    "rewards": returns,
+    "lengths": lengths,
+    "losses": losses
+}
 
-# Plotting
-
-def moving_average(data, *, window_size = 50):
-    assert data.ndim == 1
-    kernel = np.ones(window_size)
-    smooth_data = np.convolve(data, kernel) / np.convolve(np.ones_like(data), kernel)
-    return smooth_data[: -window_size + 1]
-
-plt.plot(returns)
-plt.plot(moving_average(np.array(returns)))
-plt.title("Episode Returns")
-plt.xlabel("Episode")
-plt.ylabel("Return")
-plt.grid(True)
-plt.show()
-
-plt.plot(lengths)
-plt.plot(moving_average(np.array(lengths)))
-plt.title("Episode Lengths")
-plt.xlabel("Episode")
-plt.ylabel("Steps")
-plt.grid(True)
-plt.show()
-
-plt.plot(losses)
-plt.plot(moving_average(np.array(losses)))
-plt.title("Training Loss")
-plt.xlabel("Batch")
-plt.ylabel("Loss")
-plt.grid(True)
-plt.show()
+# Save it
+torch.save(checkpoint, 'checkpoint_ALE/Pong-v5.pt')
