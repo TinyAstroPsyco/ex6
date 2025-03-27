@@ -5,14 +5,15 @@ import torch.nn.functional as F
 import torch.optim as optim
 import random
 from collections import deque, namedtuple
-import gymnasium as gym
+import gym
+from gym.wrappers import AtariPreprocessing, FrameStack
 import os
 from tqdm import tqdm
 from torch.cuda.amp import autocast, GradScaler
-# from gymnasium.wrappers import AtariPreprocessing, FrameStack
 import matplotlib.pyplot as plt
-from gymnasium.wrappers import AtariPreprocessing
-from gymnasium.wrappers.frame_stack import FrameStack
+# import gym.envs.atari
+
+
 
 
 # Device
@@ -196,9 +197,25 @@ def train_dqn_atari(
 # ---- CONFIG & RUN ---- #
 
 num_envs = 4
-env = gym.vector.make("ALE/Pong-v5", num_envs=num_envs, asynchronous=True)
-env = AtariPreprocessing(env, frame_skip=4, scale_obs=False)
-env = FrameStack(env, num_stack=4)
+# env = gym.vector.make("ALE/Pong-v5", num_envs=num_envs, asynchronous=True)
+# env = gym.vector.make("PongNoFrameskip-v4", num_envs=num_envs, asynchronous=True)
+import gym
+
+# env = gym.vector.make("PongNoFrameskip-v4", num_envs=4, asynchronous=True)
+# env = AtariPreprocessing(env, frame_skip=4, scale_obs=False)
+# env = FrameStack(env, num_stack=4)
+
+
+def make_env():
+    def thunk():
+        env = gym.make("ALE/Pong-v5", frameskip=1)
+        env = AtariPreprocessing(env, frame_skip=1, scale_obs=False)
+        env = FrameStack(env, num_stack=4)
+        return env
+    return thunk
+
+env = gym.vector.AsyncVectorEnv([make_env() for _ in range(num_envs)])
+
 
 # Hyperparams
 num_steps = 2_500_000
