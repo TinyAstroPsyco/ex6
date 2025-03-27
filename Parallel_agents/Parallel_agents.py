@@ -113,6 +113,7 @@ def make_env(seed=None):
     return thunk
 
 # Training loop
+
 def train_dqn_parallel(
     vec_env,
     num_steps,
@@ -138,6 +139,7 @@ def train_dqn_parallel(
 
     obs, _ = vec_env.reset()
     state = obs
+   
 
     # Prepopulate
     for _ in tqdm(range(replay_prepopulate_steps // vec_env.num_envs), desc="Prepopulating"):
@@ -160,7 +162,7 @@ def train_dqn_parallel(
     while step_count < num_steps:
         epsilon = exploration.value(step_count)
         with torch.no_grad():
-            state_tensor = torch.from_numpy(state).float().to(device)
+            state_tensor = torch.tensor(state, dtype=torch.float32, device=device)
             q_values = policy_net(state_tensor)
             greedy_actions = q_values.argmax(dim=1).cpu().numpy()
 
@@ -180,11 +182,11 @@ def train_dqn_parallel(
         # Training
         transitions = replay_buffer.sample(batch_size)
         batch = Transition(*zip(*transitions))
-        s = torch.FloatTensor(np.array(batch.state)).to(device)
-        a = torch.LongTensor(batch.action).unsqueeze(1).to(device)
-        r = torch.FloatTensor(batch.reward).unsqueeze(1).to(device)
-        ns = torch.FloatTensor(np.array(batch.next_state)).to(device)
-        d = torch.FloatTensor(batch.done).unsqueeze(1).to(device)
+        s = torch.tensor(np.array(batch.state), dtype=torch.float32, device=device)
+        a = torch.tensor(batch.action, dtype=torch.long, device=device).unsqueeze(1)
+        r = torch.tensor(batch.reward, dtype=torch.float32, device=device).unsqueeze(1)
+        ns = torch.tensor(np.array(batch.next_state), dtype=torch.float32, device=device)
+        d = torch.tensor(batch.done, dtype=torch.float32, device=device).unsqueeze(1)
 
         with autocast(device_type='cuda' if torch.cuda.is_available() else 'cpu'):
             q_values = policy_net(s).gather(1, a)
